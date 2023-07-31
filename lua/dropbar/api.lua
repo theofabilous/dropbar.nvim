@@ -95,9 +95,9 @@ local function toggle_fuzzy_find(opts)
     return
   end
   if menu.fzf_state then
-    menu:stop_fuzzy_find(true)
+    menu:fuzzy_find_close(true)
   else
-    menu:fuzzy_find(opts)
+    menu:fuzzy_find_open(opts)
   end
 end
 
@@ -114,7 +114,7 @@ local function fuzzy_find_click(component)
   if not menu or not menu.fzf_state then
     return
   end
-  menu:click_on_fuzzy_find_entry(component)
+  menu:fuzzy_find_click_on_entry(component)
 end
 
 ---Select the previous/next entry in the menu while fuzzy finding

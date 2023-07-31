@@ -652,7 +652,7 @@ end
 ---insert mode
 ---@param fix_cursor boolean?
 ---@version JIT
-function dropbar_menu_t:stop_fuzzy_find(fix_cursor)
+function dropbar_menu_t:fuzzy_find_close(fix_cursor)
   -- todo: handle case when restoring cursor
   -- that only has one clickable component when
   -- fixing the cursor (quick navigation?)
@@ -690,7 +690,7 @@ end
 ---as an argument and should return the `dropbar_symbol_t` that is to be clicked.
 ---@param component? number|dropbar_symbol_t|fun(entry: dropbar_menu_entry_t):dropbar_symbol_t?
 ---@version JIT
-function dropbar_menu_t:click_on_fuzzy_find_entry(component)
+function dropbar_menu_t:fuzzy_find_click_on_entry(component)
   if not self.fzf_state then
     return
   end
@@ -703,7 +703,7 @@ function dropbar_menu_t:click_on_fuzzy_find_entry(component)
     return
   end
   cursor[1] = menu_entry.idx
-  self:stop_fuzzy_find(false)
+  self:fuzzy_find_close(false)
   vim.api.nvim_win_set_cursor(self.win, cursor)
   vim.api.nvim_feedkeys('l', 'nt', false)
   component = component or 0
@@ -734,7 +734,7 @@ end
 ---Enable fuzzy finding mode
 ---@param opts? table<string, any>
 ---@version JIT
-function dropbar_menu_t:fuzzy_find(opts)
+function dropbar_menu_t:fuzzy_find_open(opts)
   opts = vim.tbl_extend('keep', opts or {}, {
     retain_inner_spaces = true,
     char_pattern = '[%w%p]',
@@ -764,7 +764,7 @@ function dropbar_menu_t:fuzzy_find(opts)
   local ffi = require('ffi')
 
   if self.fzf_state then
-    self:stop_fuzzy_find(false)
+    self:fuzzy_find_close(false)
   end
 
   local ns_name = 'DropBarFzf' .. tostring(self.win)
@@ -815,24 +815,24 @@ function dropbar_menu_t:fuzzy_find(opts)
         if type(default_func) == 'function' then
           default_func()
         end
-        self:stop_fuzzy_find(false)
+        self:fuzzy_find_close(false)
         return
       elseif mouse.winrow > vim.api.nvim_buf_line_count(self.buf) then
         return
       end
       vim.api.nvim_win_set_cursor(self.win, { mouse.line, mouse.column - 1 })
-      self:click_on_fuzzy_find_entry(function(entry)
+      self:fuzzy_find_click_on_entry(function(entry)
         return entry:get_component_at(mouse.column - 1, true)
       end)
     end,
     ['<Esc>'] = function()
-      self:stop_fuzzy_find(true)
+      self:fuzzy_find_close(true)
     end,
     ['<Enter>'] = function()
-      self:click_on_fuzzy_find_entry(-1)
+      self:fuzzy_find_click_on_entry(-1)
     end,
     ['<S-Enter>'] = function()
-      self:click_on_fuzzy_find_entry(nil)
+      self:fuzzy_find_click_on_entry(nil)
     end,
     ['<Up>'] = function()
       if vim.api.nvim_buf_line_count(self.buf) <= 1 then
@@ -955,12 +955,12 @@ function dropbar_menu_t:fuzzy_find(opts)
 
   vim.api.nvim_buf_attach(buf, false, { on_lines = on_update })
 
-  -- make sure allocated memory is freed (done in fuzzy_find_stop())
+  -- make sure allocated memory is freed (done in fuzzy_find_close())
   vim.api.nvim_create_autocmd({ 'BufUnload', 'BufWinLeave', 'WinLeave' }, {
     group = augroup,
     buffer = buf,
     callback = function()
-      self:stop_fuzzy_find(false)
+      self:fuzzy_find_close(false)
     end,
     once = true,
   })
